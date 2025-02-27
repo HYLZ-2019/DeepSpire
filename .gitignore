@@ -124,3 +124,9 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+wiki_raw
+
+API_KEYS.py
+*.txt
+*.mp3

@@ -27,3 +27,14 @@ class Power:
 
     def __eq__(self, other):
         return self.power_id == other.power_id and self.amount == other.amount
+
+    def to_json(self):
+        return {
+            "id": self.power_id,
+            "name": self.power_name,
+            "amount": self.amount,
+            "damage": self.damage,
+            "misc": self.misc,
+            "just_applied": self.just_applied,
+            "card": self.card.to_json() if self.card is not None else None
+        }

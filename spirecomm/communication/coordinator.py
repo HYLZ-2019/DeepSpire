@@ -8,6 +8,9 @@ from spirecomm.spire.game import Game
 from spirecomm.spire.screen import ScreenType
 from spirecomm.communication.action import Action, StartGameAction
 
+def log(msg):
+    with open("D:\\DeepSpire\\deepspire\\log.txt", "a", encoding="UTF-8") as f:
+        f.write(msg + "\n")
 
 def read_stdin(input_queue):
     """Read lines from stdin and write them to a queue
@@ -76,6 +79,7 @@ class Coordinator:
         :type message: str
         :return: None
         """
+        log(message)
         self.output_queue.put(message)
         self.game_is_ready = False
 

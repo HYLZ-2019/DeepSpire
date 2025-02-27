@@ -70,6 +70,8 @@ class Game:
     @classmethod
     def from_json(cls, json_state, available_commands):
         game = cls()
+        game.json_state = json_state
+        game.available_commands = available_commands
         game.current_action = json_state.get("current_action", None)
         game.current_hp = json_state.get("current_hp")
         game.max_hp = json_state.get("max_hp")
@@ -126,6 +128,10 @@ class Game:
                                 or "return" in available_commands or "skip" in available_commands
 
         return game
+
+    def to_json(self):
+        # Return the stored json_state and available_commands
+        return {"json_state": self.json_state, "available_commands": self.available_commands}
 
     def are_potions_full(self):
         for potion in self.potions:

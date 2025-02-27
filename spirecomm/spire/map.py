@@ -15,6 +15,14 @@ class Node:
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+    
+    def to_json(self):
+        return {
+            "x": self.x,
+            "y": self.y,
+            "symbol": self.symbol,
+            "children": [child.to_json() for child in self.children]
+        }
 
 
 class Map:
@@ -50,3 +58,6 @@ class Map:
                     parent_node.children.append(child_node)
 
         return dungeon_map
+    
+    def to_json(self):
+        return [node.to_json() for node in self.nodes]

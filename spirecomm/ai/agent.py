@@ -1,4 +1,5 @@
 import time
+import os
 import random
 
 from spirecomm.spire.game import Game
@@ -7,6 +8,65 @@ import spirecomm.spire.card
 from spirecomm.spire.screen import RestOption
 from spirecomm.communication.action import *
 from spirecomm.ai.priorities import *
+from prompt import get_prompt, ask_deepseek
+from utilities.voice import speak
+
+def log(msg, attr=""):
+    msg = str(msg)
+    log_path = f"D:\\DeepSpire\\deepspire\\log_{attr}.txt"
+    
+    # if log file does not exist, create it
+    if not os.path.exists(log_path):
+        with open(log_path, "w", encoding="UTF-8") as f:
+            pass 
+          
+    with open(log_path, "a", encoding="UTF-8") as f:
+        f.write(msg + "\n")
+
+
+
+def remove_redundant_keys(obj):
+    if isinstance(obj, dict):
+        for key in list(obj.keys()):
+            if key == "uuid":
+                obj.pop(key)
+            # Neglect the default values
+            elif key == "exhausts" and obj[key] == False:
+                obj.pop(key)
+            elif key == "upgrades" and obj[key] == 0:
+                obj.pop(key)
+            elif key == "ethereal" and obj[key] == False:
+                obj.pop(key)
+
+            else:
+                remove_redundant_keys(obj[key])
+    elif isinstance(obj, list):
+        for item in obj:
+            remove_redundant_keys(item)
+
+def parse_tag(key, text):
+    # Find content between <key> and </key>
+    start_tag = "<" + key + ">"
+    end_tag = "</" + key + ">"
+    start = text.find(start_tag)
+    end = text.find(end_tag)
+    if start == -1 or end == -1:
+        return ""
+    return text[start + len(start_tag):end]
+
+def simplify_json(json_obj):
+    # The uuids of cards are not needed
+    remove_redundant_keys(json_obj)
+    # Remove ["json_state"]["map"] because it's too big
+    json_obj["json_state"].pop("map")
+
+    if "combat_state" in json_obj["json_state"]:
+        # draw_pile + discard_pile + exhauset_pile = deck, so remove the deck to save tokens
+        json_obj["json_state"].pop("deck")
+    if "choice_list" in json_obj["json_state"] and len(json_obj["json_state"]["choice_list"]) == 1:
+        # Have no choice, simplify the input to save tokens
+        json_obj["json_state"].pop("deck")    
+    return json_obj
 
 
 class SimpleAgent:
@@ -21,6 +81,8 @@ class SimpleAgent:
         self.chosen_class = chosen_class
         self.priorities = Priority()
         self.change_class(chosen_class)
+
+        self.silu = "<第一次交互，暂无已有思路>"
 
     def change_class(self, new_class):
         self.chosen_class = new_class
@@ -37,6 +99,54 @@ class SimpleAgent:
         raise Exception(error)
 
     def get_next_action_in_game(self, game_state):
+        try:
+            state_json = game_state.to_json()
+            state_json = simplify_json(state_json)
+            
+            if state_json["json_state"]["screen_type"] == "NONE":
+                emph = {"当前手牌": state_json["json_state"]["combat_state"]["hand"]}
+            else:
+                emph = None
+            prompt = get_prompt(self.silu, state_json, emph=emph)
+            log("Prompt: " + prompt, "deepseek")
+            response = ask_deepseek(prompt)
+            log("Response: " + response, "deepseek")
+
+            # parse out <command> </command> and <silu> </silu> and <comment> </comment>
+            command = parse_tag("command", response)
+            log(command, "command")
+            silu = parse_tag("silu", response)
+            log(silu, "silu")
+            comment = parse_tag("comment", response)
+            log(comment, "comment")
+
+            self.silu = silu
+            speak(comment)
+
+            command_parts = command.split(" ")
+            if command_parts[0] == "play":
+                if len(command_parts) == 3:
+                    generated_target = True
+                else:
+                    generated_target = False
+                card_id = int(command_parts[1])
+                if state_json["json_state"]["combat_state"]["hand"][card_id - 1].has_target:
+                    need_target = True
+                else:
+                    need_target = False
+                
+                if need_target and not generated_target:
+                    command_parts.append("0")
+                elif not need_target and generated_target:
+                    command_parts.pop()
+                command = " ".join(command_parts)
+
+            return Action(command=command)
+
+        except Exception as e:
+            log(e)
+            log("Will use default AI.")
+
         self.game = game_state
         #time.sleep(0.07)
         if self.game.choice_available:

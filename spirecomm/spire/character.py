@@ -48,6 +48,14 @@ class Orb:
         passive_amount = json_object.get("passive_amount")
         orb = Orb(name, orb_id, evoke_amount, passive_amount)
         return orb
+    
+    def to_json(self):
+        return {
+            "name": self.name,
+            "id": self.orb_id,
+            "evoke_amount": self.evoke_amount,
+            "passive_amount": self.passive_amount
+        }
 
 
 class Character:
