@@ -9,7 +9,7 @@ from spirecomm.spire.screen import RestOption
 from spirecomm.communication.action import *
 from spirecomm.ai.priorities import *
 from prompt import get_prompt, ask_deepseek
-from utilities.voice import speak_async
+from utilities.voice import speak_async, speak_sync
 
 def log(msg, attr=""):
     msg = str(msg)
@@ -84,6 +84,8 @@ class SimpleAgent:
         self.change_class(chosen_class)
 
         self.silu = "<第一次交互，暂无已有思路>"
+        self.error_message = ""
+        self.previous_command = ""
 
     def change_class(self, new_class):
         self.chosen_class = new_class
@@ -97,9 +99,11 @@ class SimpleAgent:
             self.priorities = random.choice(list(PlayerClass))
 
     def handle_error(self, error):
-        raise Exception(error)
+        self.error_message = f"\n警告！上次操作失败！上次给出操作：{self.previous_command}。错误信息：{str(error)}。请勿再犯！\n"
+        return self.get_next_action_in_game(self.game_state)
 
     def get_next_action_in_game(self, game_state):
+        self.game_state = game_state.copy()
         try:
             state_json = game_state.to_json()
             state_json = simplify_json(state_json)
@@ -108,9 +112,9 @@ class SimpleAgent:
                 emph = {"当前手牌": state_json["json_state"]["combat_state"]["hand"]}
             else:
                 emph = None
-            prompt = get_prompt(self.silu, state_json, emph=emph)
+            prompt = get_prompt(self.silu, state_json, emph=emph) + self.error_message
             log("Prompt: " + prompt, "deepseek")
-            response = ask_deepseek(prompt)
+            response = ask_deepseek(prompt, model_name="qwen-turbo")
             log("Response: " + response, "deepseek")
 
             # parse out <command> </command> and <silu> </silu> and <comment> </comment>
@@ -122,16 +126,18 @@ class SimpleAgent:
             log(comment, "comment")
 
             self.silu = silu
-            speak_async(comment)
+            speak_sync(comment)
 
             command_parts = command.split(" ")
+            if command_parts[0] not in state_json["available_commands"]:
+                command = state_json["available_commands"][0]
             if command_parts[0] == "play":
                 if len(command_parts) == 3:
                     generated_target = True
                 else:
                     generated_target = False
                 card_id = int(command_parts[1])
-                if state_json["json_state"]["combat_state"]["hand"][card_id - 1].has_target:
+                if state_json["json_state"]["combat_state"]["hand"][card_id - 1]["has_target"]:
                     need_target = True
                 else:
                     need_target = False
@@ -142,6 +148,8 @@ class SimpleAgent:
                     command_parts.pop()
                 command = " ".join(command_parts)
 
+            self.previous_command = command
+            self.error_message = ""
             return Action(command=command)
 
         except Exception as e:

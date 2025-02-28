@@ -16,9 +16,9 @@ status_bar_file = os.path.join(repo_root, "status_bar.txt")
 voice_error_file = os.path.join(repo_root, "voice_error.log")
 
 dashscope.api_key = VOICE_API_KEY
-model = "cosyvoice-v2"
+model = "cosyvoice-v1"
 #voice = "longxiaoxia_v2"
-voice = "longcheng_v2"
+voice = "longcheng"
 
 def log_error(error):
 	if not os.path.exists(voice_error_file):
@@ -72,13 +72,16 @@ def speak(text):
 speak_lock = threading.Lock()
 
 def speak_sync(text):
-	with speak_lock:
-		synthesizer = SpeechSynthesizer(model=model, voice=voice)
-		audio = synthesizer.call(text)
-		with open(output_path, 'wb') as f:
-			f.write(audio)
-			# Play the audio file
-		playsound(output_path)
+	try:
+		with speak_lock:
+			synthesizer = SpeechSynthesizer(model=model, voice=voice, speech_rate=1.5)
+			audio = synthesizer.call(text)
+			with open(output_path, 'wb') as f:
+				f.write(audio)
+				# Play the audio file
+			playsound(output_path)
+	except Exception as e:
+		log_error(str(e))
 
 def speak_async(test):
 	thread = threading.Thread(target=speak_sync, args=(test,))

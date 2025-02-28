@@ -1,4 +1,5 @@
 from enum import Enum
+import copy
 
 import spirecomm.spire.relic
 import spirecomm.spire.card
@@ -145,3 +146,7 @@ class Game:
             if potion.potion_id != "Potion Slot":
                 potions.append(potion)
         return potions
+    
+    # Copy method
+    def copy(self):
+        return copy.deepcopy(self)
