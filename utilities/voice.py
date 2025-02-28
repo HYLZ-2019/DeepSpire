@@ -9,18 +9,23 @@ from playsound import playsound
 import threading
 import time
 
+# This file is deepspire/utilities/voice.py. Make output_path and status_bar_file relative to this file instead of hardcoding them.
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+output_path = os.path.join(repo_root, "output.mp3")
+status_bar_file = os.path.join(repo_root, "status_bar.txt")
+voice_error_file = os.path.join(repo_root, "voice_error.log")
+
 dashscope.api_key = VOICE_API_KEY
 model = "cosyvoice-v2"
 #voice = "longxiaoxia_v2"
 voice = "longcheng_v2"
 
 def log_error(error):
-	with open("D:/DeepSpire/deepspire/voice_error.log", "a", encoding="UTF-8") as f:
+	if not os.path.exists(voice_error_file):
+		with open(voice_error_file, "w", encoding="UTF-8") as f:
+			pass
+	with open(voice_error_file, "a", encoding="UTF-8") as f:
 		f.write(error + "\n")
-
-output_path = "D:/DeepSpire/deepspire/output.mp3"
-
-status_bar_file = "D:/DeepSpire/deepspire/status_bar.txt"
 
 def speak(text):
 	# 在等待的过程中，往status_bar写入“语音合成中....”

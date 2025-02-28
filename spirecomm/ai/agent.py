@@ -13,7 +13,8 @@ from utilities.voice import speak_async
 
 def log(msg, attr=""):
     msg = str(msg)
-    log_path = f"D:\\DeepSpire\\deepspire\\log_{attr}.txt"
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    log_path = os.path.join(repo_root, f"log_{attr}.txt")
     
     # if log file does not exist, create it
     if not os.path.exists(log_path):

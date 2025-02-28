@@ -2,6 +2,7 @@ from openai import OpenAI
 from API_KEYS import DEEPSEEK_API_KEY, VOICE_API_KEY
 import threading
 import time
+import os
 
 # 重载一下json dumps时list的表示方法。
 # 一般来说是这样的：
@@ -62,7 +63,8 @@ client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 # client = OpenAI(api_key=VOICE_API_KEY, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
 
-status_bar_file = "D:/DeepSpire/deepspire/status_bar.txt"
+repo_root = os.path.dirname(os.path.abspath(__file__))
+status_bar_file = os.path.join(repo_root, "status_bar.txt")
 
 def ask_deepseek(prompt):
 	# 在等待response的过程中，往status_bar写入“Deepseek正在回答中....”
