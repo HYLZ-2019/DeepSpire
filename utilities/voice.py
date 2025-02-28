@@ -62,3 +62,20 @@ def speak(text):
 	# Stop the dot appender thread
 	dots_event.set()
 	dot_thread.join(timeout=0.1)
+
+
+speak_lock = threading.Lock()
+
+def speak_sync(text):
+	with speak_lock:
+		synthesizer = SpeechSynthesizer(model=model, voice=voice)
+		audio = synthesizer.call(text)
+		with open(output_path, 'wb') as f:
+			f.write(audio)
+			# Play the audio file
+		playsound(output_path)
+
+def speak_async(test):
+	thread = threading.Thread(target=speak_sync, args=(test,))
+	thread.daemon = True
+	thread.start()

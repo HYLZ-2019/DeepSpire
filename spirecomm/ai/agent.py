@@ -9,7 +9,7 @@ from spirecomm.spire.screen import RestOption
 from spirecomm.communication.action import *
 from spirecomm.ai.priorities import *
 from prompt import get_prompt, ask_deepseek
-from utilities.voice import speak
+from utilities.voice import speak_async
 
 def log(msg, attr=""):
     msg = str(msg)
@@ -121,7 +121,7 @@ class SimpleAgent:
             log(comment, "comment")
 
             self.silu = silu
-            speak(comment)
+            speak_async(comment)
 
             command_parts = command.split(" ")
             if command_parts[0] == "play":
