@@ -1,3 +1,5 @@
+# 代码开源，欢迎点star！
+# https://github.com/HYLZ-2019/DeepSpire
 import itertools
 import datetime
 import sys

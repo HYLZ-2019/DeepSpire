@@ -86,6 +86,7 @@ class SimpleAgent:
         self.silu = "<第一次交互，暂无已有思路>"
         self.error_message = ""
         self.previous_command = ""
+        self.past_responses = []
 
     def change_class(self, new_class):
         self.chosen_class = new_class
@@ -112,7 +113,7 @@ class SimpleAgent:
                 emph = {"当前手牌": state_json["json_state"]["combat_state"]["hand"]}
             else:
                 emph = None
-            prompt = get_prompt(self.silu, state_json, emph=emph) + self.error_message
+            prompt = get_prompt(self.silu, state_json, emph=emph, history_output=self.past_responses) + self.error_message
             log("Prompt: " + prompt, "deepseek")
             response = ask_deepseek(prompt, model_name="qwen-turbo")
             log("Response: " + response, "deepseek")
@@ -130,8 +131,17 @@ class SimpleAgent:
 
             command_parts = command.split(" ")
             if command_parts[0] not in state_json["available_commands"]:
-                command = state_json["available_commands"][0]
-            if command_parts[0] == "play":
+                # From state_json["available_commands"], select from priority ["proceed", "confirm", "return", "skip", "cancel", leave]
+                found_good = False
+                for prior_command in ["proceed", "confirm", "return", "skip", "cancel", "leave"]:
+                    if prior_command in state_json["available_commands"]:
+                        command = prior_command
+                        found_good = True
+                        break
+                if not found_good:
+                    command = state_json["available_commands"][0]
+
+            elif command_parts[0] == "play":
                 if len(command_parts) == 3:
                     generated_target = True
                 else:
@@ -147,6 +157,11 @@ class SimpleAgent:
                 elif not need_target and generated_target:
                     command_parts.pop()
                 command = " ".join(command_parts)
+
+            self.past_responses.append(f"<command>{command}</command><comment>{comment}</comment>")
+            MEM_LEN = 5
+            if len(self.past_responses) > MEM_LEN:
+                self.past_responses = self.past_responses[-MEM_LEN:]
 
             self.previous_command = command
             self.error_message = ""

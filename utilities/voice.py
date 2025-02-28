@@ -71,10 +71,10 @@ def speak(text):
 
 speak_lock = threading.Lock()
 
-def speak_sync(text):
+def speak_sync(text, output_path=output_path, voice=voice, speech_rate=1.5):
 	try:
 		with speak_lock:
-			synthesizer = SpeechSynthesizer(model=model, voice=voice, speech_rate=1.5)
+			synthesizer = SpeechSynthesizer(model=model, voice=voice, speech_rate=speech_rate)
 			audio = synthesizer.call(text)
 			with open(output_path, 'wb') as f:
 				f.write(audio)

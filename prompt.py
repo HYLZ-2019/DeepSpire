@@ -18,7 +18,7 @@ def list_encoder(obj):
 
 
 
-def get_prompt(silu, game_json, emph=None):
+def get_prompt(silu, game_json, emph=None, history_output=[]):
 	p = f'''
 	【摘要】
 	现在，你需要扮演一个游玩杀戮尖塔的AI主播，你的名字叫DeepSpire。由于你只能和游戏通过文字交互，每次需要操作时，我会向你描述游戏状态，请你给出操作指令。我会告诉你如下信息：
@@ -34,7 +34,7 @@ def get_prompt(silu, game_json, emph=None):
 	杀戮尖塔局面json描述中的screen_type分为：
 	（1）EVENT：事件界面，有多个选项供你选择。你需要在options里选择一个disabled==False的选项。假如你要选第一个选项（choice_list[0]），指令应为`<command>choose 0</command>`。
 	（2）MAP：你面前是地图，你需要从next_nodes里选择下一个房间。symbol表示房间类型：'M'-怪物，'?'-未知，'$'-商店，'R'-火堆，'E'-精英怪，'T'-宝箱。你需要从可选列表里选一个房间，假如你要选第一个房间（next_nodes[0]），指令应为`<command>choose 0</command>`。
-	（3）SHOP_ROOM：商店界面。根据choice_list，可以用<command>choose 0</command>来和商人交互（choice_list=['shop']时），或者购买第0个物品（对应的商品信息和价格在screen_state中，你的金币数是gold的数值）。使用<command>proceed</command>离开商店。
+	（3）SHOP_ROOM：商店界面。根据choice_list，可以用<command>choose 0</command>来和商人交互（choice_list=['shop']时），或者购买第0个物品（对应的商品信息和价格在screen_state中，你的金币数是gold的数值）。如果没有东西可买了，在<silu>里加入【proceed】标记。如果看到【proceed】标记，使用<command>proceed</command>离开商店。
 	（4）CHEST：宝箱界面。根据choice_list交互。
 	（5）COMBAT_REWARD：奖励界面。通过proceed离开。
 	（6）REST：火堆。根据choice_list交互。
@@ -42,9 +42,14 @@ def get_prompt(silu, game_json, emph=None):
 	（8）NONE：说明你正在战斗中。你可以选择通过<command>play x y</command>打出hand列表里的第x张卡牌到monsters列表里的第y个怪物（手牌x从1开始计数，怪物y从0开始计数，has_target=False的卡牌不需要y），或者<command>end</command>结束回合。你可以通过<command>potion x</command>使用第x个药水。
 	
 	以上规则只是近似，最重要的是要让输出符合“目前可用的指令有：……”中的一个，例如在一些场景中你需要灵活使用<command>confirm</command>。随便选一个优于用一个不可用的。
+	有战利品可以拿的时候，一定要拿！
+	如果金币已经不足以购买任何商品，请标记下回合要proceed，否则会在商店里无限循环！
 
 	【你上次交互留下的思路和笔记】
 	{silu}
+
+	【你前几回合的评论和使用的指令】
+	{"\n".join(history_output)}
 
 	【目前局面的信息】
 	{game_json["json_state"]}
